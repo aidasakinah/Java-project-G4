@@ -1,11 +1,12 @@
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class PaymentSystem extends JFrame {
     private JTextField customerIdField;
@@ -16,49 +17,51 @@ public class PaymentSystem extends JFrame {
 
     public PaymentSystem() {
         setTitle("Electricity Bill Payment System");
-        setSize(400, 300);
+        setSize(600, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // Center the window
 
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         JPanel inputPanel = createInputPanel();
-        mainPanel.add(inputPanel, BorderLayout.CENTER);
+        mainPanel.add(inputPanel, BorderLayout.NORTH);
 
-        paymentStatusArea = new JTextArea(10, 30);
+        paymentStatusArea = new JTextArea();
         paymentStatusArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(paymentStatusArea);
-        mainPanel.add(scrollPane, BorderLayout.SOUTH);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         add(mainPanel);
-
-        loadPaymentsFromFile(); // Load existing payments from file on startup
     }
 
     private JPanel createInputPanel() {
-        JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Make Payment"),
+                new EmptyBorder(10, 10, 10, 10)));
 
         JLabel customerIdLabel = new JLabel("Customer ID:");
-        customerIdField = new JTextField();
+        customerIdField = new JTextField(20);
         JLabel amountLabel = new JLabel("Amount (RM):");
-        amountField = new JTextField();
+        amountField = new JTextField(20);
         JButton payButton = new JButton("Pay Bill");
         JButton checkButton = new JButton("Check Past Payments");
 
-        payButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String customerId = customerIdField.getText();
-                String amountStr = amountField.getText();
-                if (customerId.isEmpty() || amountStr.isEmpty()) {
-                    JOptionPane.showMessageDialog(PaymentSystem.this,
-                            "Please enter Customer ID and Amount.",
-                            "Payment Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+        // Add action listeners
+        payButton.addActionListener(e -> {
+            String customerId = customerIdField.getText().trim();
+            String amountStr = amountField.getText().trim();
+            if (customerId.isEmpty() || amountStr.isEmpty()) {
+                JOptionPane.showMessageDialog(PaymentSystem.this,
+                        "Please enter Customer ID and Amount.",
+                        "Payment Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
+            try {
                 double amount = Double.parseDouble(amountStr);
                 boolean paymentMade = makePayment(customerId, amount);
 
@@ -67,6 +70,7 @@ public class PaymentSystem extends JFrame {
                             "Payment successful for Customer ID: " + customerId,
                             "Payment Success",
                             JOptionPane.INFORMATION_MESSAGE);
+                    // Do not automatically display history after payment
                 } else {
                     JOptionPane.showMessageDialog(PaymentSystem.this,
                             "Payment unsuccessful. Please check details.",
@@ -77,29 +81,47 @@ public class PaymentSystem extends JFrame {
                 // Clear fields after payment
                 customerIdField.setText("");
                 amountField.setText("");
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(PaymentSystem.this,
+                        "Invalid amount format. Please enter a valid number.",
+                        "Payment Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        checkButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                displayPaymentHistory();
-            }
-        });
+        checkButton.addActionListener(e -> displayPaymentHistory());
 
-        panel.add(customerIdLabel);
-        panel.add(customerIdField);
-        panel.add(amountLabel);
-        panel.add(amountField);
-        panel.add(payButton);
-        panel.add(checkButton);
+        // GridBagLayout constraints
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        panel.add(customerIdLabel, gbc);
+
+        gbc.gridx = 1;
+        panel.add(customerIdField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(amountLabel, gbc);
+
+        gbc.gridx = 1;
+        panel.add(amountField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(payButton, gbc);
+
+        gbc.gridy = 3;
+        panel.add(checkButton, gbc);
 
         return panel;
     }
 
     private boolean makePayment(String customerId, double amount) {
-        // Write payment details to file
-        String paymentInfo = customerId + "," + amount + "," + System.currentTimeMillis() + "\n";
+        String paymentInfo = customerId + "," + amount + "," + getCurrentDateTime() + "\n";
         try {
             FileWriter writer = new FileWriter(PAYMENT_FILE, true);
             writer.write(paymentInfo);
@@ -120,7 +142,7 @@ public class PaymentSystem extends JFrame {
                 String[] payment = line.split(",");
                 history.append("Customer ID: ").append(payment[0])
                         .append(", Amount: RM").append(payment[1])
-                        .append(", Timestamp: ").append(payment[2]).append("\n");
+                        .append(", Date: ").append(payment[2]).append("\n");
             }
             reader.close();
         } catch (IOException e) {
@@ -130,28 +152,21 @@ public class PaymentSystem extends JFrame {
         paymentStatusArea.setText(history.toString());
     }
 
-    private void loadPaymentsFromFile() {
-        // Load existing payments and display in the text area
-        StringBuilder history = new StringBuilder();
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(PAYMENT_FILE));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] payment = line.split(",");
-                history.append("Customer ID: ").append(payment[0])
-                        .append(", Amount: RM").append(payment[1])
-                        .append(", Timestamp: ").append(payment[2]).append("\n");
-            }
-            reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        paymentStatusArea.setText(history.toString());
+    private String getCurrentDateTime() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        return dateFormat.format(date);
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
+            // Set look and feel to Nimbus for nicer appearance (optional)
+            try {
+                UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
             PaymentSystem paymentSystem = new PaymentSystem();
             paymentSystem.setVisible(true);
         });
