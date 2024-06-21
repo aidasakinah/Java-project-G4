@@ -30,7 +30,7 @@ public class billing extends JFrame {
         add(mainPanel);
 
         // Load icon
-        ImageIcon originalIcon = new ImageIcon("path/to/your/tnb_logo.png");
+        ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/tnb_logo.png"));
         Image scaledImage = originalIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
         ImageIcon scaledIcon = new ImageIcon(scaledImage);
         setIconImage(scaledIcon.getImage());
@@ -43,7 +43,7 @@ public class billing extends JFrame {
     sidebar.setBackground(new Color(230, 230, 250));
 
     // Load and scale the icon
-    ImageIcon originalIcon = new ImageIcon("C:/Users/OWNER/Desktop/Java/billing/src/main/java/com/mycompany/billing/tnb_logo.png");
+    ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/tnb_logo.png"));
     Image scaledImage = originalIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
     ImageIcon scaledIcon = new ImageIcon(scaledImage);
 
@@ -57,6 +57,7 @@ public class billing extends JFrame {
 
     pricingButton.addActionListener(e -> cardLayout.show(cardPanel, "Pricing"));
     calculateButton.addActionListener(e -> cardLayout.show(cardPanel, "Calculate"));
+    paybillsButton.addActionListener(e -> cardLayout.show(cardPanel, "Pay Bills"));
 
     pricingButton.setAlignmentX(Component.CENTER_ALIGNMENT);
     calculateButton.setAlignmentX(Component.CENTER_ALIGNMENT);
