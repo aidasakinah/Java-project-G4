@@ -84,7 +84,7 @@ public class UserAuthSystem extends JFrame {
         JButton backButton = new JButton("Back");
 
         // Add a logo at the top left
-        ImageIcon logoIcon = new ImageIcon("C:/Users/USER/OneDrive/Documents/NetBeansProjects/tkx/src/main/java/user.jpg");
+        ImageIcon logoIcon = new ImageIcon("image/user.jpg");
         Image img = logoIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
         logoIcon = new ImageIcon(img);
         JLabel logoLabel = new JLabel(logoIcon);
@@ -229,7 +229,7 @@ public class UserAuthSystem extends JFrame {
 
     private boolean registerUser(String username, String address, String meter, String password) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("user_records.txt", true))) {
-            writer.write(String.format("%s,%s,%s,%s%n", username, address, meter, password));
+            writer.write(String.format("%s,\"%s\",%s,%s%n", username, address, meter, password));
             return true;
         } catch (IOException e) {
             e.printStackTrace();
