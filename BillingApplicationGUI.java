@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +8,8 @@ public class BillingApplicationGUI extends JFrame {
 
     private Billing billingApp;
     private JTextArea outputArea;
+    private JPanel mainPanel;
+    private JPanel loginPanel;
 
     private static final String ADMIN_USERNAME = "admin";
     private static final String ADMIN_PASSWORD = "admin123";
@@ -20,7 +21,7 @@ public class BillingApplicationGUI extends JFrame {
         billingApp = new Billing();
 
         // Initialize JFrame
-        setSize(600, 400);
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Create menu bar
@@ -28,126 +29,124 @@ public class BillingApplicationGUI extends JFrame {
         setJMenuBar(menuBar);
 
         // Create menus
-        JMenu adminMenu = new JMenu("Admin");
-        menuBar.add(adminMenu);
-
-        // Create menu items
-        JMenuItem viewInfoItem = new JMenuItem("View Customer Information");
-        viewInfoItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (isAdminLoggedIn) {
-                    displayUserRecords("user_records.txt");
-                } else {
-                    JOptionPane.showMessageDialog(BillingApplicationGUI.this, "Please log in as admin to view customer information.");
-                }
-            }
-        });
-        adminMenu.add(viewInfoItem);
-
-        JMenuItem updateStatusItem = new JMenuItem("Update Customer Status");
-        updateStatusItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (isAdminLoggedIn) {
-                    updateCustomerStatus();
-                } else {
-                    JOptionPane.showMessageDialog(BillingApplicationGUI.this, "Please log in as admin to update customer status.");
-                }
-            }
-        });
-        adminMenu.add(updateStatusItem);
-
-        JMenuItem addAdminItem = new JMenuItem("Add Admin");
-        addAdminItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (isAdminLoggedIn) {
-                    addAdmin();
-                } else {
-                    JOptionPane.showMessageDialog(BillingApplicationGUI.this, "Please log in as admin to add admin.");
-                }
-            }
-        });
-        adminMenu.add(addAdminItem);
-
-        JMenuItem deleteAdminItem = new JMenuItem("Delete Admin");
-        deleteAdminItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (isAdminLoggedIn) {
-                    deleteAdmin();
-                } else {
-                    JOptionPane.showMessageDialog(BillingApplicationGUI.this, "Please log in as admin to delete admin.");
-                }
-            }
-        });
-        adminMenu.add(deleteAdminItem);
-
-        JMenuItem exitItem = new JMenuItem("Exit");
-        exitItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.exit(0);
-            }
-        });
-
         JMenu fileMenu = new JMenu("File");
         menuBar.add(fileMenu);
+
+        JMenuItem exitItem = new JMenuItem("Exit");
+        exitItem.addActionListener(e -> System.exit(0));
         fileMenu.add(exitItem);
+
+        // Create login panel
+        loginPanel = createLoginPanel();
+        getContentPane().add(loginPanel);
+
+        // Display GUI
+        setVisible(true);
+    }
+
+    private JPanel createLoginPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        JLabel usernameLabel = new JLabel("Username:");
+        JTextField usernameField = new JTextField(15);
+        JLabel passwordLabel = new JLabel("Password:");
+        JPasswordField passwordField = new JPasswordField(15);
+        JButton loginButton = new JButton("Login");
+
+        loginButton.addActionListener(e -> {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+            if (checkAdminCredentials(username, password)) {
+                isAdminLoggedIn = true;
+                showMainInterface();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid admin credentials. Please try again.");
+            }
+        });
+
+        gbc.gridx = 0; gbc.gridy = 0;
+        panel.add(usernameLabel, gbc);
+        gbc.gridx = 1;
+        panel.add(usernameField, gbc);
+        gbc.gridx = 0; gbc.gridy = 1;
+        panel.add(passwordLabel, gbc);
+        gbc.gridx = 1;
+        panel.add(passwordField, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        panel.add(loginButton, gbc);
+
+        return panel;
+    }
+
+    private void showMainInterface() {
+        getContentPane().remove(loginPanel);
+        mainPanel = createMainPanel();
+        getContentPane().add(mainPanel);
+        revalidate();
+        repaint();
+    }
+
+    private JPanel createMainPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JButton viewInfoButton = new JButton("View Customer Information");
+        JButton updateStatusButton = new JButton("Update Customer Status");
+        JButton addAdminButton = new JButton("Add New Admin");
+        JButton deleteAdminButton = new JButton("Delete Admin");
+        JButton viewPaymentButton = new JButton("View Payment");
+
+        viewInfoButton.addActionListener(e -> displayUserRecords("user_records.txt"));
+        updateStatusButton.addActionListener(e -> updateCustomerStatus());
+        addAdminButton.addActionListener(e -> addAdmin());
+        deleteAdminButton.addActionListener(e -> deleteAdmin());
+        viewPaymentButton.addActionListener(e -> viewPayment());
+
+        buttonPanel.add(viewInfoButton);
+        buttonPanel.add(updateStatusButton);
+        buttonPanel.add(addAdminButton);
+        buttonPanel.add(deleteAdminButton);
+        buttonPanel.add(viewPaymentButton);
+
+        panel.add(buttonPanel, BorderLayout.NORTH);
 
         // Text area for displaying output
         outputArea = new JTextArea();
         outputArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(outputArea);
-        getContentPane().add(scrollPane, BorderLayout.CENTER);
+        panel.add(scrollPane, BorderLayout.CENTER);
 
-        // Display GUI
-        setVisible(true);
-
-        // Prompt admin login
-        promptAdminLogin();
-    }
-
-    private void promptAdminLogin() {
-        String username = JOptionPane.showInputDialog(this, "Enter admin username:");
-        if (username == null) {
-            // If admin cancels or closes the input dialog, exit the application
-            System.exit(0);
-        }
-
-        String password = JOptionPane.showInputDialog(this, "Enter admin password:");
-        if (password == null) {
-            // If admin cancels or closes the input dialog, exit the application
-            System.exit(0);
-        }
-
-        if (checkAdminCredentials(username, password)) {
-            isAdminLoggedIn = true;
-            JOptionPane.showMessageDialog(this, "Admin logged in successfully.");
-        } else {
-            JOptionPane.showMessageDialog(this, "Invalid admin credentials. Please try again.");
-            promptAdminLogin(); // Recursively prompt again on failure
-        }
+        return panel;
     }
 
     private boolean checkAdminCredentials(String username, String password) {
+        // Check hardcoded admin credentials first
+        if (username.equals(ADMIN_USERNAME) && password.equals(ADMIN_PASSWORD)) {
+            return true;
+        }
+
+        // Then check admin_records.txt
         try (BufferedReader reader = new BufferedReader(new FileReader("admin_records.txt"))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
                 if (parts.length == 2 && parts[0].equals(username) && parts[1].equals(password)) {
-                    return true; // Match found
+                    return true;
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return false; // No match found
+        return false;
     }
 
     private void displayUserRecords(String fileName) {
-        outputArea.setText(""); // Clear previous text
+        outputArea.setText("");
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -160,19 +159,19 @@ public class BillingApplicationGUI extends JFrame {
     }
 
     private void updateCustomerStatus() {
-    String name = JOptionPane.showInputDialog(this, "Enter customer name:");
-    if (name != null && !name.isEmpty()) {
-        String statusStr = JOptionPane.showInputDialog(this, "Enter new status (true for active, false for inactive):");
-        try {
-            boolean status = Boolean.parseBoolean(statusStr);
-            billingApp.updateCustomerStatus(name, status);
-            displayUserRecords("user_records.txt"); // Update displayed records
-            JOptionPane.showMessageDialog(this, "Status updated successfully for customer: " + name);
+        String name = JOptionPane.showInputDialog(this, "Enter customer name:");
+        if (name != null && !name.isEmpty()) {
+            String statusStr = JOptionPane.showInputDialog(this, "Enter new status (true for active, false for inactive):");
+            try {
+                boolean status = Boolean.parseBoolean(statusStr);
+                billingApp.updateCustomerStatus(name, status);
+                displayUserRecords("user_records.txt");
+                JOptionPane.showMessageDialog(this, "Status updated successfully for customer: " + name);
             } catch (NumberFormatException e) {
-            outputArea.setText("Invalid input for status.");
+                outputArea.setText("Invalid input for status.");
             }
         } else {
-        outputArea.setText("Customer name cannot be empty.");
+            outputArea.setText("Customer name cannot be empty.");
         }
     }
 
@@ -182,19 +181,14 @@ public class BillingApplicationGUI extends JFrame {
         String confirmPassword = JOptionPane.showInputDialog(this, "Confirm admin password:");
 
         if (username != null && password != null && confirmPassword != null && password.equals(confirmPassword)) {
-            // Save admin record
             saveAdminRecord(username, password);
-
-            isAdminLoggedIn = true; // Update login status for new admin
-            JOptionPane.showMessageDialog(this, "Admin added successfully. Please log in with the new admin credentials.");
+            JOptionPane.showMessageDialog(this, "Admin added successfully.");
         } else {
             JOptionPane.showMessageDialog(this, "Invalid input or passwords do not match. Please try again.");
-            addAdmin();
         }
     }
 
     private void saveAdminRecord(String username, String password) {
-        // Save admin record to admin_records.txt
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("admin_records.txt", true))) {
             writer.write(String.format("%s,%s%n", username, password));
         } catch (IOException e) {
@@ -217,7 +211,6 @@ public class BillingApplicationGUI extends JFrame {
     }
 
     private boolean deleteAdminRecord(String username) {
-        // Delete admin record from admin_records.txt
         List<String> lines = new ArrayList<>();
         boolean deleted = false;
 
@@ -227,7 +220,7 @@ public class BillingApplicationGUI extends JFrame {
                 String[] parts = line.split(",");
                 if (parts.length >= 1 && parts[0].equals(username)) {
                     deleted = true;
-                    continue; // Skip writing this line
+                    continue;
                 }
                 lines.add(line);
             }
@@ -235,7 +228,6 @@ public class BillingApplicationGUI extends JFrame {
             e.printStackTrace();
         }
 
-        // Rewrite the file with updated information
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("admin_records.txt"))) {
             for (String line : lines) {
                 writer.write(line + "\n");
@@ -247,12 +239,26 @@ public class BillingApplicationGUI extends JFrame {
         return deleted;
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                new BillingApplicationGUI();
+    private void viewPayment() {
+        outputArea.setText("");
+        File paymentsFile = new File("payments.txt");
+        if (!paymentsFile.exists()) {
+            outputArea.setText("Payments file not found.");
+            return;
+        }
+        try (BufferedReader reader = new BufferedReader(new FileReader(paymentsFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                outputArea.append(line + "\n");
             }
-        });
+        } catch (IOException e) {
+            outputArea.setText("Error reading payments from payments.txt");
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(BillingApplicationGUI::new);
     }
 }
 
@@ -261,11 +267,10 @@ class Billing {
 
     public Billing() {
         users = new ArrayList<>();
-        loadUserRecords("user_records.txt"); // Load existing user records
+        loadUserRecords("user_records.txt");
     }
 
     private void loadUserRecords(String fileName) {
-        // Load existing user records from file
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -290,8 +295,6 @@ class Billing {
     public void addCustomer(String name, String address, boolean active) {
         UserAuthSystem user = new UserAuthSystem(name, address, active);
         users.add(user);
-
-        // Save to file
         updateRecordsFile("user_records.txt");
     }
 
@@ -302,26 +305,21 @@ class Billing {
                 break;
             }
         }
-
-        // Update file
         updateRecordsFile("user_records.txt");
     }
 
     public void deleteCustomer(String name) {
         users.removeIf(user -> user.getName().equals(name));
-
-        // Update file
         updateRecordsFile("user_records.txt");
     }
 
     private void updateRecordsFile(String fileName) {
-    // Append the file with updated information
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))) {
-        for (UserAuthSystem user : users) {
-            writer.write(String.format("%s,%s,%s%n", user.getName(), user.getAddress(), user.isActive()));
-        }
-    } catch (IOException e) {
-        e.printStackTrace();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+            for (UserAuthSystem user : users) {
+                writer.write(String.format("%s,%s,%s%n", user.getName(), user.getAddress(), user.isActive()));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
